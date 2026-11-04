@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#030A05">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Watch Log</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: a single column "ticket rail" — toolbar on top, each show is a ticket stub with a perforated S/E counter on the right. */
+/* Evergreen: your five colors, taken darker. Lighter greens are derived from them for text that has to stay readable on the dark ground. */
+:root{
+  --bg:#030A05; --surface:#08120B; --ink:#F3F7EB; --line:#1C2B1D; --accent-fill:#163714;
+  --accent:#4E9A3A; --accent-ink:#F3F7EB; --muted:#93A690;
+  --display:"Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
+  --body:"DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+  color-scheme:dark;
+}
+.hbtns{display:flex;gap:8px;flex-wrap:wrap}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px}
+.wrap{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+header{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(40px,9vw,60px);line-height:.9;margin:0;letter-spacing:.01em;text-transform:uppercase}
+h1 span{color:var(--accent)}
+.sub{color:var(--muted);margin:6px 0 0;font-size:14px}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 12px;font-weight:500}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--accent-fill);color:var(--accent-ink);border-color:var(--accent-fill);font-weight:700}
+.btn.primary:hover{border-color:var(--accent)}
+.btn.danger{color:var(--accent)}
+.btn.small{padding:5px 9px;font-size:13px}
+
+.notice{font-size:13px;color:var(--muted);border:1px dashed var(--line);border-radius:8px;padding:8px 12px}
+.toolbar{display:flex;flex-direction:column;gap:10px}
+.searchrow{display:flex;gap:8px;flex-wrap:wrap}
+.searchrow input{flex:1 1 220px;min-width:0}
+input[type=text],input[type=url],input[type=number],select,textarea{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:9px 11px;width:100%}
+.searchrow select{width:auto;flex:0 1 180px;min-width:0}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:transparent;border-radius:999px;padding:5px 12px;font-size:13px;color:var(--muted)}
+.chip[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.chip .n{font-family:var(--mono);font-size:11px;opacity:.75;margin-left:4px}
+
+.list{display:flex;flex-direction:column;gap:10px}
+.ticket{display:grid;grid-template-columns:1fr auto;background:var(--surface);border:1px solid var(--line);border-radius:10px;position:relative}
+.ticket.example{opacity:.6}
+.main{padding:14px 16px;min-width:0;display:flex;flex-direction:column;gap:6px}
+.title{font-weight:700;font-size:17px;margin:0;overflow-wrap:anywhere}
+.meta{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-size:13px;color:var(--muted)}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:500;padding:2px 8px;border-radius:999px;border:1px solid currentColor}
+.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+/* status tags use only theme colors: told apart by fill and outline, not by extra hues */
+.s-watching{background:var(--accent-fill);color:var(--ink);border-color:var(--accent)} .s-watching::before{background:var(--accent)}
+.s-plan{color:var(--ink);border-color:var(--ink)}
+.s-paused{background:var(--line);color:var(--muted);border-color:var(--line)}
+.s-done{color:var(--muted);border-color:var(--line)} .s-done::before{background:transparent;border:1px solid var(--muted)}
+.site{color:var(--ink);font-weight:500;text-decoration:none;border-bottom:1px solid var(--accent)}
+a.site:hover{color:var(--accent)}
+.note{font-size:13px;color:var(--muted);margin:0;overflow-wrap:anywhere}
+.actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.stub{border-left:2px dashed var(--line);padding:12px 16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;width:124px}
+.stub .lbl{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.se{font-family:var(--mono);font-weight:700;font-size:20px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.ticket::before,.ticket::after{content:"";position:absolute;right:calc(124px - 8px);width:14px;height:14px;border-radius:50%;background:var(--bg);border:1px solid var(--line)}
+.ticket::before{top:-8px;clip-path:inset(50% 0 0 0)} .ticket::after{bottom:-8px;clip-path:inset(0 0 50% 0)}
+.ticket.wide-stub::before,.ticket.wide-stub::after{display:none}
+.mono{font-family:var(--mono)}
+.empty{text-align:center;padding:28px 16px;border:1px dashed var(--line);border-radius:10px;display:flex;flex-direction:column;gap:10px;align-items:center}
+.empty h2{font-family:var(--display);font-size:28px;margin:0;text-transform:uppercase}
+.empty p{margin:0;color:var(--muted);max-width:44ch}
+.exlabel{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-top:4px}
+
+dialog{border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);padding:0;width:min(520px,calc(100vw - 32px));max-height:calc(100dvh - 32px)}
+dialog::backdrop{background:rgba(3,8,4,.7)}
+form.edit{padding:18px;display:flex;flex-direction:column;gap:12px}
+form.edit h2{font-family:var(--display);font-size:28px;margin:0;text-transform:uppercase}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field label{font-size:12px;font-weight:500;color:var(--muted);letter-spacing:.04em}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.formfoot{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:4px}
+.formfoot .right{display:flex;gap:8px;margin-left:auto}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:8px;font-size:14px;z-index:20}
+@media (max-width:520px){
+  .ticket{grid-template-columns:1fr}
+  .stub{border-left:none;border-top:2px dashed var(--line);flex-direction:row;justify-content:space-between;width:auto}
+  .ticket::before,.ticket::after{display:none}
+  .row3{grid-template-columns:1fr 1fr}
+}
+@media (prefers-reduced-motion:no-preference){.ticket{transition:border-color .15s}.ticket:hover{border-color:var(--muted)}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Watch<span>Log</span></h1>
+      <p class="sub">Where you left off, and which site you were watching it on.</p>
+    </div>
+    <div class="hbtns">
+      <button class="btn" id="exportBtn" type="button">Back up</button>
+      <button class="btn" id="importBtn" type="button">Restore</button>
+      <input type="file" id="importFile" accept=".json,application/json" hidden>
+      <button class="btn primary" id="addBtn" type="button">+ Add show</button>
+    </div>
+  </header>
+
+
+  <div class="notice" id="notice" hidden></div>
+
+  <div class="toolbar">
+    <div class="searchrow">
+      <input type="text" id="q" placeholder="Search titles, sites, notes" aria-label="Search">
+      <select id="siteFilter" aria-label="Filter by site"><option value="">All sites</option></select>
+    </div>
+    <div class="chips" id="chips" role="group" aria-label="Filter by status"></div>
+  </div>
+
+  <div class="list" id="list"></div>
+</div>
+
+<dialog id="dlg">
+  <form class="edit" id="form" method="dialog">
+    <h2 id="formTitle">Add show</h2>
+    <div class="field"><label for="f-title">Title</label><input type="text" id="f-title" required placeholder="e.g. Severance"></div>
+    <div class="row">
+      <div class="field"><label for="f-type">Type</label>
+        <select id="f-type"><option>Series</option><option>Anime</option><option>Movie</option><option>Cartoon</option><option>Documentary</option><option>Other</option></select></div>
+      <div class="field"><label for="f-status">Status</label>
+        <select id="f-status"><option value="watching">Watching</option><option value="plan">Plan to watch</option><option value="paused">Paused</option><option value="done">Finished</option></select></div>
+    </div>
+    <div class="row">
+      <div class="field"><label for="f-site">Site name</label><input type="text" id="f-site" list="siteNames" placeholder="e.g. the site you use"></div>
+      <div class="field"><label for="f-url">Link (optional)</label><input type="url" id="f-url" placeholder="https://…"></div>
+    </div>
+    <datalist id="siteNames"></datalist>
+    <div class="row3" id="epRow">
+      <div class="field"><label for="f-season">Season</label><input type="number" id="f-season" min="0" inputmode="numeric"></div>
+      <div class="field"><label for="f-ep">Episode</label><input type="number" id="f-ep" min="0" inputmode="numeric"></div>
+      <div class="field"><label for="f-time">Timestamp</label><input type="text" id="f-time" placeholder="e.g. 23:10"></div>
+    </div>
+    <div class="field"><label for="f-notes">Notes</label><textarea id="f-notes" rows="2" placeholder="Server 2 has better quality, subs in English…"></textarea></div>
+    <div class="formfoot">
+      <button class="btn danger" type="button" id="delBtn" hidden>Delete</button>
+      <div class="right">
+        <button class="btn" type="button" id="cancelBtn">Cancel</button>
+        <button class="btn primary" type="submit" id="saveBtn">Save</button>
+      </div>
+    </div>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(function(){
+  const STATUS = {watching:"Watching", plan:"Plan to watch", paused:"Paused", done:"Finished"};
+  const $ = id => document.getElementById(id);
+  let items = [];          // [{id, ...fields}]
+  let store = null;        // {save(id,data), remove(id)}
+  let loaded = false;
+  let filter = "all", query = "", siteF = "";
+  let editingId = null;
+
+  // ---------- storage ----------
+  const LS_KEY = "watchlog.items.v1";
+  function lsRead(){ try{ return JSON.parse(localStorage.getItem(LS_KEY)||"[]") }catch(e){ return [] } }
+  function lsWrite(arr){ try{ localStorage.setItem(LS_KEY, JSON.stringify(arr)) }catch(e){} }
+
+  function useLocal(msg){
+    store = {
+      async save(id, data){ const i = items.findIndex(x=>x.id===id); const rec = {id, ...data};
+        if(i>=0) items[i]=rec; else items.push(rec); lsWrite(items); render(); },
+      async remove(id){ items = items.filter(x=>x.id!==id); lsWrite(items); render(); }
+    };
+    items = lsRead(); loaded = true;
+    showNotice(msg); render();
+  }
+  function showNotice(t){ const n=$("notice"); n.textContent=t; n.hidden=!t; }
+
+  function init(){
+    useLocal("");
+    if(!items.length) showNotice("Your list is saved in this browser on this computer. Use Back up now and then to keep a copy.");
+  }
+
+
+  // ---------- helpers ----------
+  const esc = s => String(s??"").replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  function normUrl(u){ u=(u||"").trim(); if(!u) return ""; if(!/^https?:\/\//i.test(u)) u="https://"+u; try{ const x=new URL(u); return /^https?:$/.test(x.protocol)?x.href:"" }catch(e){ return "" } }
+  const pad = n => String(n).padStart(2,"0");
+  function seText(it){
+    if(it.type==="Movie") return it.time ? it.time : "—";
+    const s = it.season!=null && it.season!=="" ? "S"+pad(it.season) : "";
+    const e = it.episode!=null && it.episode!=="" ? "E"+pad(it.episode) : "";
+    return (s+e) || "—";
+  }
+  function ago(ts){ if(!ts) return ""; const d=(Date.now()-ts)/1000;
+    if(d<60) return "just now"; if(d<3600) return Math.floor(d/60)+"m ago"; if(d<86400) return Math.floor(d/3600)+"h ago";
+    if(d<86400*30) return Math.floor(d/86400)+"d ago"; return new Date(ts).toLocaleDateString(); }
+  function toast(t){ const el=$("toast"); el.textContent=t; el.hidden=false; clearTimeout(toast._t); toast._t=setTimeout(()=>el.hidden=true,1800); }
+  function newId(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
+  function siteNames(){ const m=new Map(); items.forEach(i=>{ if(i.site){ const k=i.site.trim(); if(!m.has(k.toLowerCase())) m.set(k.toLowerCase(),{name:k,url:i.url||""}); else if(i.url && !m.get(k.toLowerCase()).url) m.get(k.toLowerCase()).url=i.url; } }); return [...m.values()].sort((a,b)=>a.name.localeCompare(b.name)); }
+
+  // ---------- render ----------
+  function render(){
+    // chips
+    const counts = {all:items.length}; Object.keys(STATUS).forEach(k=>counts[k]=items.filter(i=>i.status===k).length);
+    $("chips").innerHTML = [["all","All"],...Object.entries(STATUS)].map(([k,l])=>
+      `<button type="button" class="chip" data-f="${k}" aria-pressed="${filter===k}">${l}<span class="n">${counts[k]}</span></button>`).join("");
+    // sites
+    const sites = siteNames();
+    const sel = $("siteFilter"), cur = siteF;
+    sel.innerHTML = `<option value="">All sites</option>` + sites.map(s=>`<option value="${esc(s.name.toLowerCase())}">${esc(s.name)}</option>`).join("");
+    sel.value = sites.some(s=>s.name.toLowerCase()===cur) ? cur : (siteF="");
+    $("siteNames").innerHTML = sites.map(s=>`<option value="${esc(s.name)}"></option>`).join("");
+
+    const list = $("list");
+    if(!loaded){ list.innerHTML = `<div class="empty"><p>Loading your list…</p></div>`; return; }
+    if(items.length===0){
+      list.innerHTML = `<div class="empty"><h2>Nothing logged yet</h2>
+        <p>Add a show or movie with the site you watch it on. Each one keeps your season, episode and a link straight back to the site.</p>
+        <button class="btn primary" type="button" data-act="add">+ Add your first show</button></div>
+        <div class="exlabel">Example of how it looks</div>` +
+        ticket({id:"ex",title:"Example Show",type:"Series",status:"watching",site:"Your streaming site",url:"",season:2,episode:5,time:"18:40",notes:"Server 2 has the best quality",updatedAt:Date.now()-3600e3*5}, true);
+      return;
+    }
+    const q = query.trim().toLowerCase();
+    const shown = items
+      .filter(i=>filter==="all"||i.status===filter)
+      .filter(i=>!siteF || (i.site||"").trim().toLowerCase()===siteF)
+      .filter(i=>!q || [i.title,i.site,i.notes,i.type].some(v=>(v||"").toLowerCase().includes(q)))
+      .sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
+    list.innerHTML = shown.length ? shown.map(i=>ticket(i,false)).join("")
+      : `<div class="empty"><p>No shows match these filters.</p></div>`;
+  }
+
+  function ticket(i, example){
+    const url = normUrl(i.url);
+    const siteHtml = i.site ? (url ? `<a class="site" href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(i.site)} ↗</a>` : `<span class="site">${esc(i.site)}</span>`)
+                            : (url ? `<a class="site" href="${esc(url)}" target="_blank" rel="noopener noreferrer">Open link ↗</a>` : `<span>No site saved</span>`);
+    const isMovie = i.type==="Movie";
+    const ex = example ? ' disabled' : '';
+    return `<article class="ticket${example?' example':''}" data-id="${esc(i.id)}">
+      <div class="main">
+        <h3 class="title">${esc(i.title)}</h3>
+        <div class="meta"><span class="pill s-${esc(i.status)}">${STATUS[i.status]||"Watching"}</span><span>${esc(i.type||"Series")}</span><span>on ${siteHtml}</span></div>
+        ${i.notes?`<p class="note">${esc(i.notes)}</p>`:""}
+        <div class="actions">
+          ${isMovie?"":`<button class="btn small" type="button" data-act="ep"${ex}>+1 episode</button><button class="btn small" type="button" data-act="season"${ex}>Next season</button>`}
+          ${i.status!=="done"?`<button class="btn small" type="button" data-act="done"${ex}>Mark finished</button>`:""}
+          <button class="btn small" type="button" data-act="edit"${ex}>Edit</button>
+        </div>
+      </div>
+      <div class="stub">
+        <span class="lbl">${isMovie?"Stopped at":"Up to"}</span>
+        <span class="se">${esc(seText(i))}</span>
+        <span class="lbl">${isMovie?"":(i.time?`<span class="mono">@ ${esc(i.time)}</span>`:"")}</span>
+        <span class="lbl">${esc(ago(i.updatedAt))}</span>
+      </div>
+    </article>`;
+  }
+
+  // ---------- actions ----------
+  function clean(it){ const {id, ...rest} = it; return rest; }
+  async function patch(id, changes, msg){
+    const it = items.find(x=>x.id===id); if(!it||!store) return;
+    const data = {...clean(it), ...changes, updatedAt:Date.now()};
+    try{ await store.save(id, data); if(msg) toast(msg); }catch(e){ toast("Couldn't save. Check your connection and try again."); }
+  }
+
+  document.addEventListener("click", e=>{
+    const chip = e.target.closest(".chip"); if(chip){ filter = chip.dataset.f; render(); return; }
+    const b = e.target.closest("[data-act]"); if(!b) return;
+    const act = b.dataset.act;
+    if(act==="add"){ openForm(null); return; }
+    const id = b.closest(".ticket")?.dataset.id; if(!id || id==="ex") return;
+    const it = items.find(x=>x.id===id); if(!it) return;
+    if(act==="edit") openForm(it);
+    if(act==="ep") patch(id, {episode:(+it.episode||0)+1, time:"", status:it.status==="plan"?"watching":it.status}, `${it.title}: ${seText({...it,episode:(+it.episode||0)+1,time:""})}`);
+    if(act==="season") patch(id, {season:(+it.season||0)+1, episode:1, time:""}, `${it.title}: next season`);
+    if(act==="done") patch(id, {status:"done"}, `${it.title} marked finished`);
+  });
+  $("addBtn").onclick = ()=>openForm(null);
+  $("q").addEventListener("input", e=>{ query=e.target.value; render(); });
+  $("siteFilter").addEventListener("change", e=>{ siteF=e.target.value; render(); });
+
+  // ---------- form ----------
+  const F = k => $("f-"+k);
+  function syncType(){ const movie = F("type").value==="Movie"; F("season").closest(".field").hidden=movie; F("ep").closest(".field").hidden=movie; }
+  F("type").addEventListener("change", syncType);
+  F("site").addEventListener("change", ()=>{ const s=siteNames().find(x=>x.name.toLowerCase()===F("site").value.trim().toLowerCase()); if(s && s.url && !F("url").value) F("url").value=s.url; });
+
+  function openForm(it){
+    if(!store){ toast("Still loading, try again in a moment."); return; }
+    editingId = it ? it.id : null;
+    $("formTitle").textContent = it ? "Edit show" : "Add show";
+    F("title").value = it?.title||""; F("type").value = it?.type||"Series"; F("status").value = it?.status||"watching";
+    F("site").value = it?.site||""; F("url").value = it?.url||"";
+    F("season").value = it?.season ?? (it?"":1); F("ep").value = it?.episode ?? (it?"":1); F("time").value = it?.time||"";
+    F("notes").value = it?.notes||"";
+    const del=$("delBtn"); del.hidden=!it; del.textContent="Delete"; del.dataset.armed="";
+    syncType();
+    try{ $("dlg").showModal(); }catch(e){ $("dlg").setAttribute("open",""); }
+    setTimeout(()=>F("title").focus(),0);
+  }
+  function closeForm(){ try{ $("dlg").close(); }catch(e){ $("dlg").removeAttribute("open"); } }
+  $("cancelBtn").onclick = closeForm;
+  $("form").addEventListener("submit", async e=>{
+    e.preventDefault();
+    const title = F("title").value.trim(); if(!title){ F("title").focus(); return; }
+    const num = v => v==="" ? "" : Math.max(0, parseInt(v,10)||0);
+    const data = { title, type:F("type").value, status:F("status").value, site:F("site").value.trim(),
+      url:F("url").value.trim(), season:num(F("season").value), episode:num(F("ep").value),
+      time:F("time").value.trim(), notes:F("notes").value.trim(), updatedAt:Date.now() };
+    const id = editingId || newId();
+    if(editingId){ const old=items.find(x=>x.id===editingId); if(old?.createdAt) data.createdAt=old.createdAt; } else data.createdAt=Date.now();
+    closeForm();
+    try{ await store.save(id, data); toast(editingId?"Saved":"Added "+title); }catch(err){ toast("Couldn't save. Check your connection and try again."); }
+  });
+  $("delBtn").onclick = async ()=>{
+    const del=$("delBtn");
+    if(!del.dataset.armed){ del.dataset.armed="1"; del.textContent="Tap again to delete"; return; }
+    const it=items.find(x=>x.id===editingId); closeForm();
+    try{ await store.remove(editingId); toast("Deleted "+(it?.title||"")); }catch(e){ toast("Couldn't delete. Try again."); }
+  };
+
+  // ---------- backup / restore ----------
+  $("exportBtn").onclick = ()=>{
+    const blob = new Blob([JSON.stringify({app:"WatchLog",version:1,exported:new Date().toISOString(),items},null,2)],{type:"application/json"});
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
+    a.download = "watchlog-backup-"+new Date().toISOString().slice(0,10)+".json";
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+    toast("Backup saved to your Downloads");
+  };
+  $("importBtn").onclick = ()=>$("importFile").click();
+  $("importFile").addEventListener("change", async e=>{
+    const f = e.target.files[0]; e.target.value=""; if(!f) return;
+    try{
+      const d = JSON.parse(await f.text()); const list = Array.isArray(d) ? d : d.items;
+      if(!Array.isArray(list)) throw 0;
+      const byId = new Map(items.map(x=>[x.id,x]));
+      let n=0; list.forEach(x=>{ if(x && x.id && x.title){ byId.set(String(x.id), x); n++; } });
+      items=[...byId.values()]; lsWrite(items); render(); toast("Restored "+n+" shows");
+    }catch(err){ toast("That file isn't a Watch Log backup."); }
+  });
+
+  init();
+  // ask the browser to never auto-clear this app's saved data
+  try{ navigator.storage && navigator.storage.persist && navigator.storage.persist(); }catch(e){}
+  if("serviceWorker" in navigator && location.protocol!=="file:"){ navigator.serviceWorker.register("sw.js").catch(()=>{}); }
+})();
+</script>
+
+</body>
+</html>
